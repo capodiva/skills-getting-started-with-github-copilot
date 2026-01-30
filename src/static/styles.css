@@ -70,8 +70,27 @@ section h3 {
   color: #0066cc;
 }
 
-.activity-card p {
-  margin-bottom: 8px;
+/* Participants list styling */
+.activity-card .participants-title {
+  margin: 10px 0 6px;
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.participants-list {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0 0 8px 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.participant-item {
+  font-size: 0.9rem;
+  color: #444;
+  padding: 2px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.04);
 }
 
 .form-group {
