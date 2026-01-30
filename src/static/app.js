@@ -10,8 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and reset activity select options to avoid duplicates
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -20,12 +21,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Build participants list HTML
-        const participantsHtml = details.participants && details.participants.length > 0
+        const participantsHtml = details.participants.length
           ? `<h5 class="participants-title">Participants (${details.participants.length})</h5>
-             <ul class="participants-list">
-               ${details.participants.map(p => `<li class="participant-item">${p}</li>`).join("")}
-             </ul>`
+             <ul class="participants-list">${details.participants
+              .map(
+                (p) =>
+                  `<li class="participant-item">${p} <button class="participant-delete" data-activity="${encodeURIComponent(
+                    name
+                  )}" data-email="${encodeURIComponent(p)}" title="Unregister">🗑️</button></li>`
+              )
+              .join("")}</ul>`
           : `<p class="info">No participants yet.</p>`;
 
         activityCard.innerHTML = `
@@ -33,7 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+<<<<<<< HEAD
           ${participantsHtml}
+=======
+          <div><strong>Participants:</strong> ${participantsHtml}</div>
+>>>>>>> 5fd27b5 (Add activities management features and corresponding tests)
         `;
 
         activitiesList.appendChild(activityCard);
@@ -43,7 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+
       });
+
+
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
@@ -69,11 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         messageDiv.textContent = result.message;
-        messageDiv.className = "success";
+        messageDiv.className = "message success";
         signupForm.reset();
+        // Refresh activities so participants list updates
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        messageDiv.className = "message error";
       }
 
       messageDiv.classList.remove("hidden");
@@ -84,9 +98,51 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 5000);
     } catch (error) {
       messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
+      messageDiv.className = "message error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Delegate click events for participant delete buttons (single handler)
+  activitiesList.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".participant-delete");
+    if (!btn) return;
+
+    const activityName = decodeURIComponent(btn.getAttribute("data-activity"));
+    const email = decodeURIComponent(btn.getAttribute("data-email"));
+
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activityName)}/participants?email=${encodeURIComponent(
+          email
+        )}`,
+        { method: "DELETE" }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        messageDiv.textContent = result.message;
+        messageDiv.className = "message success";
+      } else {
+        messageDiv.textContent = result.detail || "An error occurred";
+        messageDiv.className = "message error";
+      }
+
+      messageDiv.classList.remove("hidden");
+
+      // Refresh activities to reflect change
+      fetchActivities();
+
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 4000);
+    } catch (err) {
+      messageDiv.textContent = "Failed to unregister. Please try again.";
+      messageDiv.className = "message error";
+      messageDiv.classList.remove("hidden");
+      console.error("Error unregistering:", err);
     }
   });
 
